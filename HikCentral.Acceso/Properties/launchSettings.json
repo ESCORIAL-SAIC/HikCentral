@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "HikCentral.Acceso": {
+      "commandName": "Project",
+      "commandLineArgs": "42524389 mlopez@escorial.com.ar 9;12;31;30"
+    }
+  }
+}
