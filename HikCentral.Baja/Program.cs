@@ -17,7 +17,7 @@ class Program
             var emailToNotify = args[1];
             var mailService = Fun.InitializeMailService(emailToNotify);
 
-            await ProcessPerson(dni, mailService);
+            await DisablePerson(dni, mailService);
         }
         catch (Exception ex)
         {
@@ -25,36 +25,7 @@ class Program
         }
     }
 
-    private static void LoadConfiguration()
-    {
-        try
-        {
-            Console.WriteLine("Cargando configuraciones...");
-            Configuration.Load();
-            Console.WriteLine("Configuraciones cargadas correctamente.");
-        }
-        catch (SettingsException ex)
-        {
-            HandleSpecificException(ex, "Error cargando configuraciones.");
-        }
-        catch (RecipientsException ex)
-        {
-            HandleSpecificException(ex, "Error cargando destinatarios.");
-        }
-        catch (SenderException ex)
-        {
-            HandleSpecificException(ex, "Error cargando remitente.");
-        }
-    }
-    private static void ValidateArgs(string[] args)
-    {
-        if (args.Length < 2)
-        {
-            Console.WriteLine("Por favor, proporcione el DNI y/o el correo electrónico deshabilitante.");
-            Environment.Exit(1);
-        }
-    }
-    private static async Task ProcessPerson(string dni, Mail mailService)
+    private static async Task DisablePerson(string dni, Mail mailService)
     {
         var recipients = Configuration.Setting.Recipients;
         try
@@ -78,6 +49,27 @@ class Program
         )
         {
             await HandleSpecificException(ex, dni, mailService, recipients);
+        }
+    }
+    private static void LoadConfiguration()
+    {
+        try
+        {
+            Console.WriteLine("Cargando configuraciones...");
+            Configuration.Load();
+            Console.WriteLine("Configuraciones cargadas correctamente.");
+        }
+        catch (SettingsException ex)
+        {
+            HandleSpecificException(ex, "Error cargando configuraciones.");
+        }
+        catch (RecipientsException ex)
+        {
+            HandleSpecificException(ex, "Error cargando destinatarios.");
+        }
+        catch (SenderException ex)
+        {
+            HandleSpecificException(ex, "Error cargando remitente.");
         }
     }
     private static void HandleGeneralException(Exception ex)
@@ -106,4 +98,13 @@ class Program
         await Fun.HandleException(ex, subject, dni, mailService, recipients);
         Console.ReadKey();
     }
+    private static void ValidateArgs(string[] args)
+    {
+        if (args.Length < 2)
+        {
+            Console.WriteLine("Por favor, proporcione el DNI y/o el correo electrónico deshabilitante.");
+            Environment.Exit(1);
+        }
+    }
+
 }
