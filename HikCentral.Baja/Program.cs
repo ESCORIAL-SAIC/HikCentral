@@ -1,4 +1,5 @@
 ﻿using HikCentral.Utils;
+using System.CommandLine;
 
 namespace HikCentral.Baja;
 
@@ -6,23 +7,63 @@ class Program
 {
     protected Program() { }
 
-    static async Task Main(string[] args)
+    static int Main(string[] args)
     {
-        try
-        {
-            LoadConfiguration();
-            ValidateArgs(args);
 
-            var dni = args[0];
-            var emailToNotify = args[1];
-            var mailService = Fun.InitializeMailService(emailToNotify);
-
-            await DisablePerson(dni, mailService);
-        }
-        catch (Exception ex)
+        Option<string> dniOption = new("--dni", "-d")
         {
-            HandleGeneralException(ex);
-        }
+            Description = "DNI de la persona a deshabilitar",
+        };
+
+        Option<string> mailOption = new("--mail", "-m")
+        {
+            Description = "Correo electrónico para notificaciones",
+        };
+
+        Option<string> beginTimeOption = new("--begin-time", "-t")
+        {
+            Description = "Hora de inicio para el rango de tiempo (formato yyyy-MM-ddThh:mm:ss)",
+        };
+
+        RootCommand rootCommand = new("Utilidad para deshabilitar persona en HikCentral");
+
+        Command subCommandDisable = new("disable", "Deshabilita a una persona en el sistema de accesos");
+        subCommandDisable.Options.Add(dniOption);
+        subCommandDisable.Options.Add(mailOption);
+
+        Command subCommandChangeBeginTime = new("change-begintime", "Especifica la hora de inicio para el rango de tiempo");
+        subCommandChangeBeginTime.Options.Add(beginTimeOption);
+        subCommandChangeBeginTime.Options.Add(dniOption);
+        subCommandChangeBeginTime.Options.Add(mailOption);
+
+        rootCommand.Subcommands.Add(subCommandDisable);
+        rootCommand.Subcommands.Add(subCommandChangeBeginTime);
+
+        subCommandDisable.SetAction(parseResult =>
+        {
+            string dni = parseResult.GetValue(dniOption);
+            string mail = parseResult.GetValue(mailOption);
+
+            Console.WriteLine("--- EJECUTANDO 'disable' ---");
+            Console.WriteLine($"DNI a deshabilitar: {dni}");
+            Console.WriteLine($"Email de notificación: {mail}");
+        });
+
+        subCommandChangeBeginTime.SetAction(parseResult =>
+        {
+            string dni = parseResult.GetValue(dniOption);
+            string stringBeginTime = parseResult.GetValue(beginTimeOption);
+            string mail = parseResult.GetValue(mailOption);
+
+            DateTime beginTime = DateTime.Parse(stringBeginTime);
+
+            Console.WriteLine("--- EJECUTANDO 'change-begintime' ---");
+            Console.WriteLine($"DNI a modificar: {dni}");
+            Console.WriteLine($"Nueva hora de inicio: {beginTime}");
+            Console.WriteLine($"Email de notificación: {mail}");
+        });
+
+        return rootCommand.Parse(args).Invoke();
     }
 
     private static async Task DisablePerson(string dni, Mail mailService)
