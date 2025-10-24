@@ -1,0 +1,16 @@
+{
+  "profiles": {
+    "WSL": {
+      "commandName": "WSL2",
+      "distributionName": ""
+    },
+    "disable": {
+      "commandName": "Project",
+      "commandLineArgs": "disable --dni 42524389 --mail mlopez@escorial.com.ar"
+    },
+    "change-begintime": {
+      "commandName": "Project",
+      "commandLineArgs": "change-begintime --dni 42524389 --begin-time 2025-10-24T16:00:00 --mail mlopez@escorial.com.ar"
+    }
+  }
+}
