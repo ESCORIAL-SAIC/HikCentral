@@ -13,16 +13,19 @@ class Program
         Option<string> dniOption = new("--dni", "-d")
         {
             Description = "DNI de la persona a deshabilitar",
+            Required = true,
         };
 
         Option<string> mailOption = new("--mail", "-m")
         {
             Description = "Correo electrónico para notificaciones",
+            Required = true,
         };
 
         Option<string> beginTimeOption = new("--begin-time", "-t")
         {
             Description = "Hora de inicio para el rango de tiempo (formato yyyy-MM-ddThh:mm:ss)",
+            Required = true,
         };
 
         RootCommand rootCommand = new("Utilidad para deshabilitar persona en HikCentral");
@@ -39,28 +42,25 @@ class Program
         rootCommand.Subcommands.Add(subCommandDisable);
         rootCommand.Subcommands.Add(subCommandChangeBeginTime);
 
-        subCommandDisable.SetAction(parseResult =>
-        {
-            string dni = parseResult.GetValue(dniOption);
-            string mail = parseResult.GetValue(mailOption);
+        LoadConfiguration();
 
-            Console.WriteLine("--- EJECUTANDO 'disable' ---");
-            Console.WriteLine($"DNI a deshabilitar: {dni}");
-            Console.WriteLine($"Email de notificación: {mail}");
+        subCommandDisable.SetAction(async parseResult =>
+        {
+            var dni = parseResult.GetValue(dniOption)!;
+            var mail = parseResult.GetValue(mailOption)!;
+
+            var mailToNotify = Fun.InitializeMailService(mail);
+
+            await DisablePerson(dni, mailToNotify);
         });
 
-        subCommandChangeBeginTime.SetAction(parseResult =>
+        subCommandChangeBeginTime.SetAction(async parseResult =>
         {
-            string dni = parseResult.GetValue(dniOption);
-            string stringBeginTime = parseResult.GetValue(beginTimeOption);
-            string mail = parseResult.GetValue(mailOption);
+            var dni = parseResult.GetValue(dniOption)!;
+            var newBeginTime = parseResult.GetValue(beginTimeOption)!;
+            var mail = parseResult.GetValue(mailOption)!;
 
-            DateTime beginTime = DateTime.Parse(stringBeginTime);
-
-            Console.WriteLine("--- EJECUTANDO 'change-begintime' ---");
-            Console.WriteLine($"DNI a modificar: {dni}");
-            Console.WriteLine($"Nueva hora de inicio: {beginTime}");
-            Console.WriteLine($"Email de notificación: {mail}");
+            await ChangeBeginTime(dni, newBeginTime, mail);
         });
 
         return rootCommand.Parse(args).Invoke();
@@ -79,6 +79,34 @@ class Program
             Console.WriteLine("Persona deshabilitada completamente del sistema de accesos.");
             Console.WriteLine("Enviando mails...");
             await Fun.NotifySuccess(mailService, "Persona deshabilitada correctamente del sistema de accesos.", recipients, person.personName, person.cards[0].cardNo);
+            Console.WriteLine("Mails enviados.");
+        }
+        catch (Exception ex) when (
+            ex is PersonInformationNotRetrievedException ||
+            ex is PersonNotFoundException ||
+            ex is AccessLevelAndAccessGroupNotRetrievedException ||
+            ex is AccessLevelReApplyException ||
+            ex is InvalidOperationException
+        )
+        {
+            await HandleSpecificException(ex, dni, mailService, recipients);
+        }
+    }
+    private static async Task ChangeBeginTime(string dni, string stringBeginTime, string mail)
+    {
+        var recipients = Configuration.Setting.Recipients;
+        var mailService = Fun.InitializeMailService(mail);
+        var newBeginTime = new DateTimeOffset(DateTime.Parse(stringBeginTime), TimeSpan.FromHours(-3));
+        try
+        {
+            Console.WriteLine("Buscando persona en HikCentral...");
+            var person = await Controllers.Person.EditPersonController.FindPersonByDni(dni);
+            Console.WriteLine($"Persona encontrada: {person.personName}");
+            Console.WriteLine("Modificando hora de inicio...");
+            await Controllers.Person.AccessLevelController.ChangePersonBeginTime(person, newBeginTime);
+            Console.WriteLine("Hora de inicio modificada correctamente.");
+            Console.WriteLine("Enviando mails...");
+            await Fun.NotifySuccess(mailService, "Hora de inicio modificada correctamente.", recipients, person.personName, person.cards[0].cardNo);
             Console.WriteLine("Mails enviados.");
         }
         catch (Exception ex) when (
@@ -137,15 +165,7 @@ class Program
             _ => "Error inesperado"
         };
         await Fun.HandleException(ex, subject, dni, mailService, recipients);
-        Console.ReadKey();
-    }
-    private static void ValidateArgs(string[] args)
-    {
-        if (args.Length < 2)
-        {
-            Console.WriteLine("Por favor, proporcione el DNI y/o el correo electrónico deshabilitante.");
-            Environment.Exit(1);
-        }
+        //Console.ReadKey();
     }
 
 }

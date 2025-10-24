@@ -7,6 +7,7 @@ namespace HikCentral.Controllers.Person;
 public class AccessLevelController
 {
     protected AccessLevelController() { }
+    private const string ORG_INDEX_CODE_INACTIVOS = "40";
     public static async Task<Models.Person.AccessLevel?> ReApply()
     {
         if (Configuration.Setting.Endpoint.ReApplyAccessSettings is null || Configuration.Setting.Endpoint.ReApplyAccessSettings.Path is null)
@@ -31,9 +32,21 @@ public class AccessLevelController
         var response = await AccessLevelListController.Get(1, 500, 1) ?? throw new AccessLevelAndAccessGroupNotRetrievedException("No se pudieron obtener los grupos de acceso.");
         foreach (var device in response.data.list)
             await AccessLevelAndAccessGroup.EditPersonController.Delete(person.personId, device.privilegeGroupId);
-        var editResponse = await EditPersonController.Disable(person);
+        person.orgIndexCode = ORG_INDEX_CODE_INACTIVOS;
+        var editResponse = await EditPersonController.EditPerson(person);
         if (editResponse == null || editResponse.code != "0")
             throw new InvalidOperationException("No se pudo mover a la persona al grupo \"Inactivos\".");
+        var reApplyResponse = await ReApply();
+        if (reApplyResponse == null || reApplyResponse.code != "0")
+            throw new AccessLevelReApplyException($"Error al aplicar los permisos en dispositivos de acceso. code {reApplyResponse?.code ?? "N/A"}, msg {reApplyResponse?.msg ?? "N/A"}");
+    }
+
+    public static async Task ChangePersonBeginTime(Models.Person.PersonInformation.List person, DateTimeOffset newBeginTime)
+    {
+        person.beginTime = newBeginTime;
+        var editResponse = await EditPersonController.EditPerson(person);
+        if (editResponse == null || editResponse.code != "0")
+            throw new InvalidOperationException("No se pudo cambiar la hora de inicio de la persona a {newBeginTime}.");
         var reApplyResponse = await ReApply();
         if (reApplyResponse == null || reApplyResponse.code != "0")
             throw new AccessLevelReApplyException($"Error al aplicar los permisos en dispositivos de acceso. code {reApplyResponse?.code ?? "N/A"}, msg {reApplyResponse?.msg ?? "N/A"}");

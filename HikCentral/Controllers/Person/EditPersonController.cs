@@ -1,31 +1,18 @@
 ﻿using HikCentral.Utils;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace HikCentral.Controllers.Person;
 
 public class EditPersonController
 {
     protected EditPersonController() { }
-    public static async Task<Models.Person.EditPerson> Disable(Models.Person.PersonInformation.List person)
+    public static async Task<Models.Person.EditPerson> EditPerson(Models.Person.PersonInformation.List person)
     {
         if (Configuration.Setting.Endpoint.PersonUpdate is null || Configuration.Setting.Endpoint.PersonUpdate.Path is null)
             throw new EndpointNullException($"El endpoint {nameof(Configuration.Setting.Endpoint.PersonUpdate)} es nulo.");
         var apiPath = Configuration.Setting.Endpoint.PersonUpdate.Path;
-        var body = new
-        {
-            person.personId,
-            person.personCode,
-            person.personFamilyName,
-            person.personGivenName,
-            orgIndexCode = "40",
-            person.gender,
-            person.phoneNo,
-            person.remark,
-            person.email,
-            person.cards,
-            person.beginTime,
-            person.endTime
-        };
+        var body = JObject.FromObject(person);
         var requestMessage = Fun.GenerateHttpRequestMessage(body);
         var httpClient = Fun.GenerateHttpClient(apiPath);
         var response = await httpClient.PostAsync($"{Configuration.Setting.ServerAddress}{apiPath}", requestMessage.Content);

@@ -6,11 +6,11 @@
     },
     "disable": {
       "commandName": "Project",
-      "commandLineArgs": "disable --dni 42523489 --mail mlopez@escorial.com.ar"
+      "commandLineArgs": "disable --dni 42524389 --mail mlopez@escorial.com.ar"
     },
     "change-begintime": {
       "commandName": "Project",
-      "commandLineArgs": "change-begintime --dni 42523489 --begin-time 2025-10-23T16:00:00 --mail mlopez@escorial.com.ar"
+      "commandLineArgs": "change-begintime --dni 42524389 --begin-time 2025-10-24T16:00:00 --mail mlopez@escorial.com.ar"
     }
   }
 }

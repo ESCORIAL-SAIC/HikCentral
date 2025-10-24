@@ -28,8 +28,8 @@ public class PersonInformation
         public Personphoto personPhoto { get; set; }
         public string email { get; set; }
         public string remark { get; set; }
-        public DateTime beginTime { get; set; }
-        public DateTime endTime { get; set; }
+        public DateTimeOffset beginTime { get; set; }
+        public DateTimeOffset endTime { get; set; }
         public Card[] cards { get; set; }
         public Fingerprint[] fingerPrint { get; set; }
     }
